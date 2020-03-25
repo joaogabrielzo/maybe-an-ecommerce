@@ -1,33 +1,29 @@
 package com.zo.routes
 
-import akka.actor.{ActorRef, Props}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.pattern.ask
-import com.zo.database.DBSetup.Stock
-import com.zo.database.StockJsonProtocol
-import com.zo.service.StockActor._
-import com.zo.service.{HttpService, StockActor}
+import com.zo.database.{Product, ProductJsonProtocol, StockRepository}
+import com.zo.service.HttpService
 import spray.json._
 
 import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
-object StockRoute extends StockJsonProtocol
+object StockRoute extends StockRepository
                   with HttpService
+                  with ProductJsonProtocol
                   with SprayJsonSupport {
-    
-    val stockActor: ActorRef = system.actorOf(Props[StockActor], "stock-actor")
     
     val stockRoute: Route =
         pathPrefix("stock") {
             path("all") {
-                val selectAllProducts: Future[Seq[Stock]] = (stockActor ? SelectAll).mapTo[Seq[Stock]]
+                val allProducts: Future[Seq[Product]] = selectAllProducts
                 
-                onComplete(selectAllProducts) {
+                onComplete(allProducts) {
                     case Success(products) =>
                         complete(products)
                     case Failure(ex)       =>
@@ -35,8 +31,7 @@ object StockRoute extends StockJsonProtocol
                 }
             } ~
             (path("find" / Segment) | parameter("productId")) { productId =>
-                val selectedProduct: Future[Option[Stock]] =
-                    (stockActor ? SelectProduct(productId)).mapTo[Option[Stock]]
+                val selectedProduct: Future[Option[Product]] = selectProduct(productId)
                 
                 onComplete(selectedProduct) {
                     case Success(productOption) =>
@@ -52,10 +47,10 @@ object StockRoute extends StockJsonProtocol
             } ~
             path("insert") {
                 post {
-                    entity(as[Stock]) { product =>
-                        val insertProduct: Future[Stock] = (stockActor ? InsertProduct(product)).mapTo[Stock]
+                    entity(as[Product]) { product =>
+                        val insertedProduct: Future[Int] = insertProduct(product)
                         
-                        onComplete(insertProduct) {
+                        onComplete(insertedProduct) {
                             case Success(_)  =>
                                 complete(
                                     HttpResponse(
@@ -69,10 +64,10 @@ object StockRoute extends StockJsonProtocol
             } ~
             path("update") {
                 put {
-                    entity(as[Stock]) { product =>
-                        val updateProduct: Future[Stock] = (stockActor ? UpdateProduct(product)).mapTo[Stock]
+                    entity(as[Product]) { product =>
+                        val updatedProduct: Future[Int] = updateProduct(product)
                         
-                        onComplete(updateProduct) {
+                        onComplete(updatedProduct) {
                             case Success(_)  =>
                                 complete(
                                     HttpResponse(
@@ -87,9 +82,9 @@ object StockRoute extends StockJsonProtocol
             path("delete" / Segment) { productId =>
                 delete {
                     
-                    val deleteProduct: Future[String] = (stockActor ? DeleteProduct(productId)).mapTo[String]
+                    val deletedProduct: Future[Boolean] = deleteProduct(productId)
                     
-                    onComplete(deleteProduct) {
+                    onComplete(deletedProduct) {
                         case Success(_)  =>
                             complete(
                                 HttpResponse(

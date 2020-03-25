@@ -42,6 +42,6 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-http-testkit" % akkaHttp % "test",
     "com.typesafe.slick" %% "slick" % slick,
     "com.typesafe.slick" %% "slick-hikaricp" % slick,
-    "org.postgresql" % "postgresql" % "9.4.1211",
+    "org.postgresql" % "postgresql" % "42.2.5",
     "com.h2database" % "h2" % "1.4.192" % "test"
 )

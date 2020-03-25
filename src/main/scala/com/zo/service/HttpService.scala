@@ -4,8 +4,8 @@ import akka.actor.ActorSystem
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.concurrent.duration._
 
 trait HttpService {
     
