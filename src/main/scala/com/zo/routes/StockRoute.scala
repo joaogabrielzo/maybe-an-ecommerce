@@ -4,24 +4,23 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import com.zo.database.{Product, ProductJsonProtocol, StockRepository}
+import com.zo.config.DB
+import com.zo.database.{Product, ProductJsonProtocol, StockTableDefinition}
 import com.zo.service.HttpService
 import spray.json._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext.Implicits.global
 
-object StockRoute extends StockRepository
-                  with HttpService
-                  with ProductJsonProtocol
-                  with SprayJsonSupport {
+class StockRoute(repo: StockTableDefinition#StockRepository)(implicit ec: ExecutionContext)
+    extends ProductJsonProtocol
+    with SprayJsonSupport {
     
     val stockRoute: Route =
         pathPrefix("stock") {
             path("all") {
-                val allProducts: Future[Seq[Product]] = selectAllProducts
+                val allProducts: Future[Seq[Product]] = repo.selectAll
                 
                 onComplete(allProducts) {
                     case Success(products) =>
@@ -31,7 +30,7 @@ object StockRoute extends StockRepository
                 }
             } ~
             (path("find" / Segment) | parameter("productId")) { productId =>
-                val selectedProduct: Future[Option[Product]] = selectProduct(productId)
+                val selectedProduct: Future[Option[Product]] = repo.selectId(productId)
                 
                 onComplete(selectedProduct) {
                     case Success(productOption) =>
@@ -48,14 +47,14 @@ object StockRoute extends StockRepository
             path("insert") {
                 post {
                     entity(as[Product]) { product =>
-                        val insertedProduct: Future[Int] = insertProduct(product)
+                        val insertedProduct: Future[Int] = repo.insert(product)
                         
                         onComplete(insertedProduct) {
                             case Success(_)  =>
                                 complete(
                                     HttpResponse(
                                         StatusCodes.Created,
-                                        entity = s"Object with ID ${product.productId} was successfully inserted."))
+                                        entity = s"Object with ID ${product.id} was successfully inserted."))
                             case Failure(ex) =>
                                 complete(s"Insert operation failed with: $ex")
                         }
@@ -65,14 +64,14 @@ object StockRoute extends StockRepository
             path("update") {
                 put {
                     entity(as[Product]) { product =>
-                        val updatedProduct: Future[Int] = updateProduct(product)
+                        val updatedProduct: Future[Int] = repo.update(product)
                         
                         onComplete(updatedProduct) {
                             case Success(_)  =>
                                 complete(
                                     HttpResponse(
                                         StatusCodes.OK,
-                                        entity = s"Object with ID ${product.productId} was successfully updated."))
+                                        entity = s"Object with ID ${product.id} was successfully updated."))
                             case Failure(ex) =>
                                 complete(s"Update operation failed with: $ex")
                         }
@@ -81,8 +80,7 @@ object StockRoute extends StockRepository
             } ~
             path("delete" / Segment) { productId =>
                 delete {
-                    
-                    val deletedProduct: Future[Boolean] = deleteProduct(productId)
+                    val deletedProduct: Future[Boolean] = repo.deleteId(productId)
                     
                     onComplete(deletedProduct) {
                         case Success(_)  =>
