@@ -19,5 +19,5 @@ trait HttpService extends StockTableDefinition with DB {
     
     lazy val stockRepository = new StockRepository()
     
-    lazy val routes: Route = new StockRoute(stockRepository).stockRoute
+    lazy val stockRoute: Route = new StockRoute(stockRepository).stockRoute
 }

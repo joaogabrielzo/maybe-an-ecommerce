@@ -1,15 +1,13 @@
 package com.zo.server
 
 import akka.http.scaladsl.Http
-import com.zo.config.{EcommerceConfig, PG}
+import com.zo.config.{EcommerceConfig, MSQL}
 import com.zo.service.HttpService
 
 object MainServer extends App
                   with HttpService
                   with EcommerceConfig
-                  with PG {
-
-//    DBSetup.startStockTable()
+                  with MSQL {
     
-    Http().bindAndHandle(routes, httpHost, httpPort)
+    Http().bindAndHandle(stockRoute, httpHost, httpPort)
 }

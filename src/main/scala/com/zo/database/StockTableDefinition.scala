@@ -25,6 +25,7 @@ trait StockTableDefinition extends RepoDefinition {
     class StockRepository(implicit ec: ExecutionContext) extends BaseRepo[Product, StockTable] {
         
         override val table: driver.api.TableQuery[StockTable] = TableQuery[StockTable]
+        
     }
     
 }

@@ -1,12 +1,9 @@
 package com.zo.routes
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import com.zo.config.DB
-import com.zo.database.{Product, ProductJsonProtocol, StockTableDefinition}
-import com.zo.service.HttpService
+import com.zo.database.{JsonProtocol, Product, StockTableDefinition}
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -14,8 +11,7 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 class StockRoute(repo: StockTableDefinition#StockRepository)(implicit ec: ExecutionContext)
-    extends ProductJsonProtocol
-    with SprayJsonSupport {
+    extends JsonProtocol {
     
     val stockRoute: Route =
         pathPrefix("stock") {

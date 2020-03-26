@@ -21,9 +21,9 @@ trait H2 extends DB {
     override val driver: JdbcProfile = slick.jdbc.H2Profile
 }
 
-trait PG extends DB {
+trait MSQL extends DB {
     
-    override val driver: JdbcProfile = slick.jdbc.PostgresProfile
+    override val driver: JdbcProfile = slick.jdbc.MySQLProfile
 }
 
 trait TableDefinition {
@@ -43,6 +43,7 @@ trait TableDefinition {
 
 trait Repository[E <: Entity] {
     
+    def createSchema: Future[Unit]
     def insert(entity: E): Future[Int]
     def selectAll: Future[Seq[E]]
     def selectId(id: String): Future[Option[E]]
@@ -59,6 +60,8 @@ trait RepoDefinition extends TableDefinition {
         extends Repository[E] {
         
         val table: TableQuery[T]
+        
+        override def createSchema: Future[Unit] = db.run(table.schema.createIfNotExists)
         
         override def insert(entity: E): Future[Int] = db.run(table += entity)
         
