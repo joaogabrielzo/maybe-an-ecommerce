@@ -25,7 +25,7 @@ class StockRoute(repo: StockTableDefinition#StockRepository)(implicit ec: Execut
                         complete(s"Select query failed with: $ex")
                 }
             } ~
-            (path("find" / Segment) | parameter("productId")) { productId =>
+            (path(Segment) | parameter("productId")) { productId =>
                 val selectedProduct: Future[Option[Product]] = repo.selectId(productId)
                 
                 onComplete(selectedProduct) {
@@ -40,41 +40,37 @@ class StockRoute(repo: StockTableDefinition#StockRepository)(implicit ec: Execut
                         complete(s"Select query failed with: $ex")
                 }
             } ~
-            path("insert") {
-                post {
-                    entity(as[Product]) { product =>
-                        val insertedProduct: Future[Int] = repo.insert(product)
-                        
-                        onComplete(insertedProduct) {
-                            case Success(_)  =>
-                                complete(
-                                    HttpResponse(
-                                        StatusCodes.Created,
-                                        entity = s"Object with ID ${product.id} was successfully inserted."))
-                            case Failure(ex) =>
-                                complete(s"Insert operation failed with: $ex")
-                        }
+            post {
+                entity(as[Product]) { product =>
+                    val insertedProduct: Future[Int] = repo.insert(product)
+                    
+                    onComplete(insertedProduct) {
+                        case Success(_)  =>
+                            complete(
+                                HttpResponse(
+                                    StatusCodes.Created,
+                                    entity = s"Object with ID ${product.id} was successfully inserted."))
+                        case Failure(ex) =>
+                            complete(s"Insert operation failed with: $ex")
                     }
                 }
             } ~
-            path("update") {
-                put {
-                    entity(as[Product]) { product =>
-                        val updatedProduct: Future[Int] = repo.update(product)
-                        
-                        onComplete(updatedProduct) {
-                            case Success(_)  =>
-                                complete(
-                                    HttpResponse(
-                                        StatusCodes.OK,
-                                        entity = s"Object with ID ${product.id} was successfully updated."))
-                            case Failure(ex) =>
-                                complete(s"Update operation failed with: $ex")
-                        }
+            put {
+                entity(as[Product]) { product =>
+                    val updatedProduct: Future[Int] = repo.update(product)
+                    
+                    onComplete(updatedProduct) {
+                        case Success(_)  =>
+                            complete(
+                                HttpResponse(
+                                    StatusCodes.OK,
+                                    entity = s"Object with ID ${product.id} was successfully updated."))
+                        case Failure(ex) =>
+                            complete(s"Update operation failed with: $ex")
                     }
                 }
             } ~
-            path("delete" / Segment) { productId =>
+            path(Segment) { productId =>
                 delete {
                     val deletedProduct: Future[Boolean] = repo.deleteId(productId)
                     
